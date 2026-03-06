@@ -1,3 +1,5 @@
+import os
+
 import torch
 from compressed_tensors.offload import dispatch_model
 from datasets import load_dataset
@@ -6,13 +8,15 @@ from transformers import AutoProcessor, Qwen3VLMoeForConditionalGeneration, Auto
 from llmcompressor import oneshot
 from llmcompressor.modifiers.awq import AWQModifier
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 MODEL_ID = "/workspace/models/huihui-ai/Huihui-Qwen3-VL-30B-A3B-Instruct-abliterated"
 NUM_CALIBRATION_SAMPLES = 256
 MAX_SEQUENCE_LENGTH = 8192
 LOCAL_DATA_PATH = "/workspace/data/merged_dataset.jsonl"
 
 model = Qwen3VLMoeForConditionalGeneration.from_pretrained(
-    MODEL_ID, dtype=torch.bfloat16, device_map="auto", trust_remote_code=True
+    MODEL_ID, dtype=torch.bfloat16, device_map="cpu", trust_remote_code=True
 )
 processor = AutoProcessor.from_pretrained(MODEL_ID, trust_remote_code=True)
 
