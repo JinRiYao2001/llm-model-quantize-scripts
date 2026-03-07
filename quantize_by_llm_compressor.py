@@ -8,15 +8,25 @@ from transformers import AutoProcessor, Qwen3VLMoeForConditionalGeneration, Auto
 from llmcompressor import oneshot
 from llmcompressor.modifiers.awq import AWQModifier
 
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 
 MODEL_ID = "/workspace/models/huihui-ai/Huihui-Qwen3-VL-30B-A3B-Instruct-abliterated"
-NUM_CALIBRATION_SAMPLES = 256
+NUM_CALIBRATION_SAMPLES = 1
 MAX_SEQUENCE_LENGTH = 8192
 LOCAL_DATA_PATH = "/workspace/data/merged_dataset.jsonl"
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+torch.set_grad_enabled(False)
+
+max_memory_mapping = {
+    0: "50GiB",     
+    "cpu": "200GiB"  
+}
 model = Qwen3VLMoeForConditionalGeneration.from_pretrained(
-    MODEL_ID, dtype=torch.bfloat16, device_map="cpu", trust_remote_code=True
+    MODEL_ID, dtype=torch.bfloat16, 
+    device_map="auto", 
+    max_memory=max_memory_mapping,
+    trust_remote_code=True
 )
 processor = AutoProcessor.from_pretrained(MODEL_ID, trust_remote_code=True)
 
@@ -99,15 +109,19 @@ recipe = AWQModifier(
     },
 )
 
+torch.cuda.empty_cache()
+
 # Apply AWQ quantization.
+SAVE_DIR = MODEL_ID.rstrip("/").split("/")[-1] + "-AWQ-W4A16-mse-seq-back"
 oneshot(
     model=model,
     processor=processor,
     recipe=recipe,
-    dataset=ds,
+    dataset=ds.select(range(1)),
     max_seq_length=MAX_SEQUENCE_LENGTH,
     num_calibration_samples=NUM_CALIBRATION_SAMPLES,
     data_collator=data_collator,
+    output_dir=SAVE_DIR,
 )
 
 print("========== SAMPLE GENERATION ==============")
@@ -118,6 +132,6 @@ print(processor.decode(output[0]))
 print("==========================================")
 
 # Save to disk in compressed-tensors format.
-SAVE_DIR = MODEL_ID.rstrip("/").split("/")[-1] + "-AWQ-W4A16-mse-seq"
+
 model.save_pretrained(SAVE_DIR, save_compressed=True)
 processor.save_pretrained(SAVE_DIR)
