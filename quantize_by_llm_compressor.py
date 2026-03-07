@@ -24,8 +24,7 @@ max_memory_mapping = {
 }
 model = Qwen3VLMoeForConditionalGeneration.from_pretrained(
     MODEL_ID, dtype=torch.bfloat16, 
-    device_map="auto", 
-    max_memory=max_memory_mapping,
+    device_map="cpu", 
     trust_remote_code=True
 )
 processor = AutoProcessor.from_pretrained(MODEL_ID, trust_remote_code=True)
