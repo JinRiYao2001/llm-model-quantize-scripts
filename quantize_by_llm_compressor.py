@@ -18,10 +18,6 @@ LOCAL_DATA_PATH = "/workspace/data/merged_dataset.jsonl"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 torch.set_grad_enabled(False)
 
-max_memory_mapping = {
-    0: "50GiB",     
-    "cpu": "200GiB"  
-}
 model = Qwen3VLMoeForConditionalGeneration.from_pretrained(
     MODEL_ID, dtype=torch.bfloat16, 
     device_map="cpu", 
@@ -123,12 +119,12 @@ oneshot(
     output_dir=SAVE_DIR,
 )
 
-print("========== SAMPLE GENERATION ==============")
-dispatch_model(model)
-input_ids = processor(text="Hello my name is", return_tensors="pt").input_ids.to("cuda")
-output = model.generate(input_ids, max_new_tokens=20)
-print(processor.decode(output[0]))
-print("==========================================")
+# print("========== SAMPLE GENERATION ==============")
+# dispatch_model(model)
+# input_ids = processor(text="Hello my name is", return_tensors="pt").input_ids.to("cuda")
+# output = model.generate(input_ids, max_new_tokens=20)
+# print(processor.decode(output[0]))
+# print("==========================================")
 
 # Save to disk in compressed-tensors format.
 
